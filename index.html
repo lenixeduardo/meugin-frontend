@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0d1530"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="MeuGin"/>
+  <meta name="description" content="Controle seus shots de gin com elegância"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <title>MeuGin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #08101f;
+      --bg2: #0d1530;
+      --blue: rgba(100,160,255,0.8);
+      --blue-dim: rgba(80,130,255,0.2);
+      --orange: rgba(255,170,60,0.9);
+      --orange-dim: rgba(255,150,40,0.2);
+      --text: #c8dfff;
+      --text-dim: rgba(140,180,255,0.5);
+      --text-faint: rgba(100,140,200,0.3);
+      --border: rgba(80,130,255,0.15);
+      --card: rgba(20,50,130,0.2);
+      --green: #7dffd0;
+      --red: #ff8f8f;
+      --font: 'Lora', Georgia, serif;
+    }
+    html, body { height: 100%; background: var(--bg); overflow: hidden; }
+    body {
+      font-family: var(--font);
+      display: flex; justify-content: center;
+      background: radial-gradient(ellipse at 20% 10%, rgba(25,55,130,0.35) 0%, transparent 55%),
+                  radial-gradient(ellipse at 80% 85%, rgba(10,25,80,0.3) 0%, transparent 55%),
+                  var(--bg);
+    }
+    #app {
+      width: 100%; max-width: 430px; height: 100vh;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #0d1530 0%, #080e20 100%);
+    }
+    /* ── Scrollable content ── */
+    #scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 48px; }
+    #scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Header ── */
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 52px 28px 20px;
+    }
+    .app-title { color: var(--text); font-size: 30px; font-style: italic; letter-spacing: 2px; margin-bottom: 4px; }
+    .date-text { color: var(--text-dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+    .settings-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: rgba(30,60,150,0.2); border: 1px solid rgba(80,130,255,0.2);
+      color: rgba(140,180,255,0.7); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .settings-btn:hover { background: rgba(30,60,150,0.35); }
+    .settings-btn svg { width: 22px; height: 22px; }
+
+    /* ── Dual Cards ── */
+    .dual-cards { display: flex; gap: 12px; padding: 0 20px; margin-bottom: 24px; }
+    .mini-card {
+      flex: 1; border-radius: 20px; padding: 18px 10px;
+      display: flex; flex-direction: column; align-items: center;
+      border: 1px solid; position: relative; overflow: hidden;
+    }
+    .mini-card.liquid { background: linear-gradient(135deg,rgba(20,70,160,0.25),rgba(10,40,110,0.4)); border-color: rgba(80,170,255,0.2); }
+    .mini-card.concentrated { background: linear-gradient(135deg,rgba(120,50,10,0.25),rgba(80,30,5,0.4)); border-color: rgba(255,150,40,0.25); }
+    .mini-card.limit-reached { border-color: rgba(255,100,100,0.35) !important; }
+    .progress-wrap { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .progress-wrap svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+    .glass-center { display: flex; align-items: center; justify-content: center; }
+    .mini-count { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+    .mini-count.red { color: var(--red); }
+    .mini-limit-num { font-size: 16px; color: rgba(140,180,255,0.45); font-weight: 400; }
+    .mini-label-row { display: flex; align-items: center; gap: 4px; margin: 4px 0 6px; }
+    .mini-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(140,190,255,0.6); }
+    .mini-label.orange { color: rgba(255,160,60,0.6); }
+    .mini-cd { font-size: 11px; color: rgba(140,180,255,0.6); display: flex; align-items: center; gap: 3px; }
+    .mini-cd.orange { color: rgba(255,160,60,0.7); }
+    .mini-cd.green { color: var(--green); }
+    .mini-cd.red { color: var(--red); }
+
+    /* ── Type selector ── */
+    .section-label { padding: 0 28px 10px; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(140,180,255,0.4); }
+    .type-selector { display: flex; gap: 12px; padding: 0 20px; margin-bottom: 28px; }
+    .type-btn {
+      flex: 1; border-radius: 16px; padding: 16px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      border: 1px solid rgba(60,90,180,0.2); cursor: pointer;
+      background: linear-gradient(135deg,rgba(20,35,80,0.25),rgba(15,25,60,0.3));
+      transition: all 0.25s; user-select: none;
+    }
+    .type-btn.liquid.selected {
+      background: linear-gradient(135deg,rgba(30,100,200,0.4),rgba(20,70,160,0.5));
+      border-color: rgba(100,190,255,0.5);
+    }
+    .type-btn.concentrated.selected {
+      background: linear-gradient(135deg,rgba(180,80,10,0.4),rgba(140,50,5,0.5));
+      border-color: rgba(255,170,50,0.5);
+    }
+    .type-btn-name { font-size: 14px; color: rgba(160,190,255,0.45); transition: color 0.2s; }
+    .type-btn.liquid.selected .type-btn-name { color: rgba(80,180,255,0.9); }
+    .type-btn.concentrated.selected .type-btn-name { color: rgba(255,150,40,0.9); }
+    .type-btn-status { font-size: 10px; color: rgba(100,140,200,0.5); }
+    .type-btn-status.available { color: var(--green); }
+    .type-btn-status.warning { color: rgba(255,100,100,0.7); }
+
+    /* ── Register button ── */
+    .btn-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+    .register-btn {
+      width: 82px; height: 82px; border-radius: 50%;
+      border: 1px solid rgba(100,160,255,0.25); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, box-shadow 0.3s, opacity 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .register-btn.liquid-active {
+      background: linear-gradient(135deg,#1a6bbf,#0f4a8f);
+      box-shadow: 0 8px 32px rgba(30,100,200,0.45), 0 0 0 0 rgba(60,140,255,0.2);
+      animation: pulseLiq 2.5s infinite;
+    }
+    .register-btn.conc-active {
+      background: linear-gradient(135deg,#c05010,#8a3508);
+      box-shadow: 0 8px 32px rgba(180,80,20,0.45), 0 0 0 0 rgba(255,120,40,0.2);
+      animation: pulseConc 2.5s infinite;
+    }
+    .register-btn.inactive {
+      background: rgba(30,50,120,0.3);
+      border-color: rgba(60,100,200,0.12);
+      box-shadow: none; cursor: not-allowed; opacity: 0.6;
+    }
+    .register-btn:not(.inactive):active { transform: scale(0.88); }
+    .register-label { color: var(--text-dim); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 12px; }
+    @keyframes pulseLiq {
+      0%,100% { box-shadow: 0 8px 32px rgba(30,100,200,0.45), 0 0 0 0 rgba(60,140,255,0.15); }
+      50% { box-shadow: 0 8px 40px rgba(30,100,200,0.55), 0 0 0 14px rgba(60,140,255,0); }
+    }
+    @keyframes pulseConc {
+      0%,100% { box-shadow: 0 8px 32px rgba(180,80,20,0.45), 0 0 0 0 rgba(255,120,40,0.15); }
+      50% { box-shadow: 0 8px 40px rgba(180,80,20,0.55), 0 0 0 14px rgba(255,120,40,0); }
+    }
+
+    /* ── History ── */
+    .history-section { padding: 0 28px; margin-bottom: 40px; }
+    .history-title { color: rgba(140,180,255,0.45); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+    .history-empty { text-align: center; color: var(--text-faint); font-size: 13px; padding: 28px 0; }
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px; border-radius: 14px; margin-bottom: 8px;
+      background: rgba(20,40,100,0.12); border: 1px solid;
+      transition: opacity 0.2s;
+    }
+    .history-item.liquid { border-color: rgba(60,130,220,0.18); }
+    .history-item.concentrated { border-color: rgba(180,80,10,0.18); }
+    .history-left { display: flex; align-items: center; gap: 10px; }
+    .history-dot {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; border: 1px solid;
+    }
+    .history-dot.liquid { background: rgba(80,170,255,0.15); border-color: rgba(80,170,255,0.35); }
+    .history-dot.concentrated { background: rgba(255,140,30,0.15); border-color: rgba(255,140,30,0.35); }
+    .history-name { color: var(--text); font-size: 14px; margin-bottom: 3px; }
+    .history-time-row { display: flex; align-items: center; gap: 3px; color: rgba(140,180,255,0.5); font-size: 11px; }
+    .delete-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,80,80,0.08); border: 1px solid rgba(255,100,100,0.15);
+      color: rgba(255,120,120,0.5); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .delete-btn:hover { background: rgba(255,80,80,0.18); }
+    .footer { text-align: center; color: var(--text-faint); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ── Toast ── */
+    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: 90%; max-width: 380px; }
+    .toast {
+      background: rgba(18,36,95,0.97); border: 1px solid rgba(100,160,255,0.3);
+      color: var(--text); padding: 12px 24px; border-radius: 30px;
+      font-size: 14px; letter-spacing: 0.3px;
+      box-shadow: 0 8px 32px rgba(0,15,60,0.6);
+      animation: toastIn 0.3s ease; white-space: nowrap;
+    }
+    .toast.out { animation: toastOut 0.3s ease forwards; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(-6px); } }
+
+    /* ── Settings sheet ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(5,10,25,0.88);
+      backdrop-filter: blur(8px); z-index: 100;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .settings-sheet {
+      width: 100%; max-width: 430px;
+      background: linear-gradient(160deg,#111d40,#0c1530);
+      border-top: 1px solid rgba(80,130,255,0.2);
+      border-radius: 24px 24px 0 0;
+      padding: 28px 28px 52px;
+      max-height: 88vh; overflow-y: auto;
+      transform: translateY(40px); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    }
+    .overlay.open .settings-sheet { transform: translateY(0); }
+    .settings-sheet::-webkit-scrollbar { display: none; }
+    .sheet-handle { width: 40px; height: 4px; background: rgba(100,150,255,0.3); border-radius: 2px; margin: 0 auto 28px; }
+    .settings-title { color: #8baee8; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; }
+    .settings-section { border: 1px solid; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+    .settings-section.liquid { border-color: rgba(80,170,255,0.2); }
+    .settings-section.concentrated { border-color: rgba(255,160,60,0.2); }
+    .settings-section.rule { border-color: rgba(180,120,255,0.2); }
+    .settings-section-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+    .settings-section-title.blue { color: rgba(100,190,255,0.8); }
+    .settings-section-title.orange { color: rgba(255,170,60,0.8); }
+    .settings-section-title.purple { color: rgba(180,140,255,0.8); }
+    .settings-label { color: rgba(180,210,255,0.5); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+    .stepper { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+    .step-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(30,60,150,0.2); border: 1px solid rgba(80,130,255,0.22);
+      color: #8baee8; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; user-select: none;
+    }
+    .step-btn:hover { background: rgba(30,60,150,0.38); }
+    .step-val { color: var(--text); font-size: 30px; font-weight: 700; min-width: 58px; text-align: center; }
+    .rule-desc { color: rgba(160,180,255,0.45); font-size: 12px; margin-bottom: 16px; line-height: 1.6; }
+    .notif-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px; border-radius: 14px; margin: 8px 0 20px;
+      background: rgba(20,50,120,0.2); border: 1px solid rgba(60,100,200,0.2);
+    }
+    .notif-label { color: var(--text); font-size: 14px; margin-bottom: 4px; }
+    .notif-status { color: rgba(160,190,255,0.5); font-size: 11px; }
+    .notif-btn {
+      padding: 8px 16px; border-radius: 20px;
+      background: rgba(30,70,180,0.3); border: 1px solid rgba(80,130,255,0.4);
+      color: #8baee8; font-size: 12px; cursor: pointer; font-family: var(--font);
+      transition: background 0.2s;
+    }
+    .notif-btn:hover { background: rgba(30,70,180,0.5); }
+    .notif-dot { width: 12px; height: 12px; border-radius: 50%; background: #4cffaa; }
+    .save-btn {
+      width: 100%; padding: 16px; border-radius: 16px;
+      background: linear-gradient(135deg,#2a5cd4,#1a3c94);
+      border: none; color: var(--text); font-size: 15px; font-family: var(--font);
+      letter-spacing: 1px; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(40,90,220,0.3);
+      transition: opacity 0.2s;
+    }
+    .save-btn:hover { opacity: 0.88; }
+
+    /* ── Install banner ── */
+    #install-banner {
+      display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(18,36,95,0.97); border: 1px solid rgba(100,160,255,0.3);
+      border-radius: 20px; padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,15,60,0.5);
+      z-index: 200; max-width: 380px; width: 90%;
+    }
+    #install-banner.hidden { display: none !important; }
+    .install-text { color: var(--text); font-size: 13px; flex: 1; }
+    .install-btn {
+      padding: 8px 16px; border-radius: 16px;
+      background: linear-gradient(135deg,#2a5cd4,#1a3c94);
+      border: none; color: var(--text); font-size: 12px; font-family: var(--font);
+      cursor: pointer; white-space: nowrap;
+    }
+    .install-close { color: rgba(140,180,255,0.5); cursor: pointer; font-size: 18px; line-height: 1; background: none; border: none; }
+  </style>
+  <script>window.MEUGIN_API_URL = '';</script>
+</head>
+<body>
+<div id="app">
+  <div id="scroll">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="app-title">MeuGin</div>
+        <div class="date-text" id="date-text"></div>
+      </div>
+      <button class="settings-btn" onclick="openSettings()" aria-label="Configurações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Dual Cards -->
+    <div class="dual-cards">
+      <div class="mini-card liquid" id="card-liquid">
+        <div class="progress-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110" id="svg-liquid">
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(40,80,180,0.15)" stroke-width="7"/>
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(100,190,255,0.85)" stroke-width="7"
+              stroke-linecap="round" id="arc-liquid"
+              stroke-dasharray="301.59" stroke-dashoffset="301.59"/>
+          </svg>
+          <div class="glass-center" id="glass-liquid"></div>
+        </div>
+        <div class="mini-count" id="count-liquid">0<span class="mini-limit-num" id="limit-liquid-lbl">/4</span></div>
+        <div class="mini-label-row">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="rgba(120,200,255,0.8)" stroke="rgba(120,200,255,0.5)" stroke-width="1.5"><path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/></svg>
+          <span class="mini-label">LÍQUIDO</span>
+        </div>
+        <div class="mini-cd green" id="status-liquid">✓ Livre</div>
+      </div>
+
+      <div class="mini-card concentrated" id="card-conc">
+        <div class="progress-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110" id="svg-conc">
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(100,40,10,0.2)" stroke-width="7"/>
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(255,170,60,0.9)" stroke-width="7"
+              stroke-linecap="round" id="arc-conc"
+              stroke-dasharray="301.59" stroke-dashoffset="301.59"/>
+          </svg>
+          <div class="glass-center" id="glass-conc"></div>
+        </div>
+        <div class="mini-count" id="count-conc">0<span class="mini-limit-num" id="limit-conc-lbl">/2</span></div>
+        <div class="mini-label-row">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="rgba(255,160,60,0.8)" stroke="rgba(255,160,60,0.5)" stroke-width="1.5"><path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0C17 7 12 2 12 2z"/></svg>
+          <span class="mini-label orange">CONCENTRADO</span>
+        </div>
+        <div class="mini-cd orange" id="status-conc">✓ Livre</div>
+      </div>
+    </div>
+
+    <!-- Type Selector -->
+    <div class="section-label">SELECIONE O TIPO</div>
+    <div class="type-selector">
+      <div class="type-btn liquid selected" id="btn-liquid" onclick="selectType('liquid')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(120,200,255,0.9)" stroke="rgba(120,200,255,0.6)" stroke-width="1.5"><path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/></svg>
+        <span class="type-btn-name">Líquido</span>
+        <span class="type-btn-status available" id="typestatus-liquid">Disponível</span>
+      </div>
+      <div class="type-btn concentrated" id="btn-conc" onclick="selectType('concentrated')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(255,160,60,0.25)" stroke="rgba(255,160,60,0.6)" stroke-width="1.5"><path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0C17 7 12 2 12 2z"/></svg>
+        <span class="type-btn-name">Concentrado</span>
+        <span class="type-btn-status available" id="typestatus-conc">Disponível</span>
+      </div>
+    </div>
+
+    <!-- Register Button -->
+    <div class="btn-wrap">
+      <button class="register-btn liquid-active" id="register-btn" onclick="registerShot()">
+        <svg id="register-icon" width="28" height="28" viewBox="0 0 24 24" fill="rgba(120,200,255,0.9)" stroke="rgba(120,200,255,0.6)" stroke-width="1.5"><path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/></svg>
+      </button>
+      <div class="register-label" id="register-label">REGISTRAR LÍQUIDO</div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <div class="history-title">HISTÓRICO DE HOJE</div>
+      <div id="history-list"></div>
+    </div>
+
+    <div class="footer">Beba com moderação 🌿</div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="settings-overlay" onclick="closeSettingsIfOutside(event)">
+  <div class="settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="settings-title">CONFIGURAÇÕES</div>
+
+    <!-- Liquid -->
+    <div class="settings-section liquid">
+      <div class="settings-section-title blue">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(120,200,255,0.8)" stroke="rgba(120,200,255,0.5)" stroke-width="1.5"><path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/></svg>
+        SHOTS LÍQUIDOS
+      </div>
+      <div class="settings-label">LIMITE DIÁRIO</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="adj('sLimitLiq',-1)">−</button>
+        <div class="step-val" id="val-sLimitLiq">4</div>
+        <button class="step-btn" onclick="adj('sLimitLiq',1)">+</button>
+      </div>
+      <div class="settings-label">INTERVALO ENTRE SHOTS (MIN)</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="adj('sIntLiq',-10)">−</button>
+        <div class="step-val" id="val-sIntLiq">60</div>
+        <button class="step-btn" onclick="adj('sIntLiq',10)">+</button>
+      </div>
+    </div>
+
+    <!-- Concentrated -->
+    <div class="settings-section concentrated">
+      <div class="settings-section-title orange">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,160,60,0.8)" stroke="rgba(255,160,60,0.5)" stroke-width="1.5"><path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0C17 7 12 2 12 2z"/></svg>
+        SHOTS CONCENTRADOS
+      </div>
+      <div class="settings-label">LIMITE DIÁRIO</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="adj('sLimitConc',-1)">−</button>
+        <div class="step-val" id="val-sLimitConc">2</div>
+        <button class="step-btn" onclick="adj('sLimitConc',1)">+</button>
+      </div>
+      <div class="settings-label">INTERVALO ENTRE SHOTS (MIN)</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="adj('sIntConc',-10)">−</button>
+        <div class="step-val" id="val-sIntConc">60</div>
+        <button class="step-btn" onclick="adj('sIntConc',10)">+</button>
+      </div>
+    </div>
+
+    <!-- Cross rule -->
+    <div class="settings-section rule">
+      <div class="settings-section-title purple">⚖️ REGRA ENTRE TIPOS</div>
+      <div class="rule-desc">Tempo mínimo de espera ao alternar entre shot líquido e concentrado (e vice-versa).</div>
+      <div class="settings-label">AGUARDAR (MIN)</div>
+      <div class="stepper">
+        <button class="step-btn" onclick="adj('sIntCross',-10)">−</button>
+        <div class="step-val" id="val-sIntCross">60</div>
+        <button class="step-btn" onclick="adj('sIntCross',10)">+</button>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="notif-row">
+      <div>
+        <div class="notif-label">Notificações Push</div>
+        <div class="notif-status" id="notif-status-text">Desativadas</div>
+      </div>
+      <button class="notif-btn" id="notif-btn" onclick="requestNotif()">Ativar</button>
+    </div>
+
+    <button class="save-btn" onclick="saveSettings()">Salvar</button>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div id="install-banner" class="hidden">
+  <div class="install-text">📱 Adicionar MeuGin à tela inicial</div>
+  <button class="install-btn" id="install-btn">Instalar</button>
+  <button class="install-close" onclick="dismissInstall()">✕</button>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'meugin_v2_data';
+const CIRC = 301.59; // 2π×48
+let state = {
+  shots: [],
+  limitLiquid: 4, limitConcentrated: 2,
+  intervalLiquid: 60, intervalConcentrated: 60, intervalCross: 60,
+  notifEnabled: false,
+};
+let tempSettings = {};
+let selectedType = 'liquid';
+let tickInterval = null;
+let notifTimers = {};
+let deferredPrompt = null;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const getTodayKey = () => new Date().toISOString().split('T')[0];
+const fmt = iso => new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const minBetween = (a,b) => Math.floor((new Date(b)-new Date(a))/60000);
+const cdStr = rem => { const h=Math.floor(rem/60),m=rem%60; return h>0?`${h}h ${m}min`:`${m}min`; };
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function load() {
+  try {
+    const r = localStorage.getItem(STORAGE_KEY);
+    if(r) { const d=JSON.parse(r); Object.assign(state, d); }
+  } catch(e){}
+}
+
+// ─── Can-drink logic ──────────────────────────────────────────────────────────
+function todayShots() { return state.shots.filter(s=>s.date===getTodayKey()); }
+function liquidShots() { return todayShots().filter(s=>s.type==='liquid'); }
+function concShots()   { return todayShots().filter(s=>s.type==='concentrated'); }
+function lastOf(arr)   { return arr[arr.length-1]; }
+
+function canDrinkLiquid() {
+  const ls = liquidShots(), cs = concShots();
+  if(ls.length >= state.limitLiquid) return {ok:false, reason:'limit'};
+  const lc = lastOf(cs);
+  if(lc) {
+    const e = minBetween(lc.time, new Date());
+    if(e < state.intervalCross) return {ok:false, reason:'after_conc', remaining: state.intervalCross - e};
+  }
+  const ll = lastOf(ls);
+  if(!ll) return {ok:true};
+  const e = minBetween(ll.time, new Date());
+  if(e < state.intervalLiquid) return {ok:false, reason:'interval', remaining: state.intervalLiquid - e};
+  return {ok:true};
+}
+
+function canDrinkConc() {
+  const ls = liquidShots(), cs = concShots();
+  if(cs.length >= state.limitConcentrated) return {ok:false, reason:'limit'};
+  const ll = lastOf(ls);
+  if(ll) {
+    const e = minBetween(ll.time, new Date());
+    if(e < state.intervalCross) return {ok:false, reason:'after_liquid', remaining: state.intervalCross - e};
+  }
+  const lc = lastOf(cs);
+  if(!lc) return {ok:true};
+  const e = minBetween(lc.time, new Date());
+  if(e < state.intervalConcentrated) return {ok:false, reason:'interval', remaining: state.intervalConcentrated - e};
+  return {ok:true};
+}
+
+// ─── UI Render ────────────────────────────────────────────────────────────────
+function ginGlassSVG(type, size=42) {
+  const liq = type==='liquid' ? 'rgba(120,200,255,0.55)' : 'rgba(255,160,60,0.55)';
+  const str = type==='liquid' ? 'rgba(180,220,255,0.7)' : 'rgba(255,190,80,0.7)';
+  const surf = type==='liquid' ? 'rgba(140,210,255,0.4)' : 'rgba(255,190,80,0.4)';
+  const h = Math.round(size*1.3);
+  return `<svg width="${size}" height="${h}" viewBox="0 0 60 80" fill="none">
+    <path d="M20 8 L15 32 Q12 48 15 65 L45 65 Q48 48 45 32 L40 8 Z" fill="rgba(160,200,255,0.1)" stroke="${str}" stroke-width="1.5"/>
+    <path d="M20 8 L40 8" stroke="${str}" stroke-width="2" stroke-linecap="round"/>
+    <path d="M22 6 L38 6 Q40 4 38 2 L22 2 Q20 4 22 6Z" fill="rgba(160,200,255,0.2)" stroke="${str}" stroke-width="1"/>
+    <path d="M16 48 Q14 56 15 65 L45 65 Q46 56 44 48 Z" fill="${liq}"/>
+    <ellipse cx="30" cy="50" rx="11" ry="3.5" fill="${surf}"/>
+    <circle cx="22" cy="42" r="1.8" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="35" cy="55" r="1.3" fill="rgba(255,255,255,0.2)"/>
+  </svg>`;
+}
+
+function renderCards() {
+  const ls=liquidShots(), cs=concShots();
+  const lPct=Math.min(1,ls.length/state.limitLiquid);
+  const cPct=Math.min(1,cs.length/state.limitConcentrated);
+  const lReached=ls.length>=state.limitLiquid;
+  const cReached=cs.length>=state.limitConcentrated;
+  const lStatus=canDrinkLiquid(), cStatus=canDrinkConc();
+
+  // Arc offsets
+  document.getElementById('arc-liquid').setAttribute('stroke-dashoffset', CIRC*(1-lPct));
+  document.getElementById('arc-conc').setAttribute('stroke-dashoffset', CIRC*(1-cPct));
+  document.getElementById('arc-liquid').setAttribute('stroke', lReached?'#ff6b6b':'rgba(100,190,255,0.85)');
+  document.getElementById('arc-conc').setAttribute('stroke', cReached?'#ff6b6b':'rgba(255,170,60,0.9)');
+
+  // Card limit class
+  document.getElementById('card-liquid').classList.toggle('limit-reached', lReached);
+  document.getElementById('card-conc').classList.toggle('limit-reached', cReached);
+
+  // Counts
+  document.getElementById('count-liquid').innerHTML = `${ls.length}<span class="mini-limit-num">/${state.limitLiquid}</span>`;
+  document.getElementById('count-conc').innerHTML   = `${cs.length}<span class="mini-limit-num">/${state.limitConcentrated}</span>`;
+  document.getElementById('count-liquid').className = 'mini-count' + (lReached?' red':'');
+  document.getElementById('count-conc').className   = 'mini-count' + (cReached?' red':'');
+
+  // Glasses
+  document.getElementById('glass-liquid').innerHTML = ginGlassSVG('liquid', 38);
+  document.getElementById('glass-conc').innerHTML   = ginGlassSVG('concentrated', 38);
+
+  // Status labels
+  const lEl=document.getElementById('status-liquid'), cEl=document.getElementById('status-conc');
+  if(lReached) { lEl.className='mini-cd red'; lEl.textContent='Limite ✕'; }
+  else if(!lStatus.ok && lStatus.remaining) { lEl.className='mini-cd'; lEl.innerHTML='⏱ '+cdStr(lStatus.remaining); }
+  else { lEl.className='mini-cd green'; lEl.textContent='✓ Livre'; }
+
+  if(cReached) { cEl.className='mini-cd red'; cEl.textContent='Limite ✕'; }
+  else if(!cStatus.ok && cStatus.remaining) { cEl.className='mini-cd orange'; cEl.innerHTML='⏱ '+cdStr(cStatus.remaining); }
+  else { cEl.className='mini-cd green'; cEl.textContent='✓ Livre'; }
+
+  // Type selector status
+  const tlEl=document.getElementById('typestatus-liquid'), tcEl=document.getElementById('typestatus-conc');
+  if(lReached) { tlEl.className='type-btn-status warning'; tlEl.textContent='Limite atingido'; }
+  else if(!lStatus.ok && lStatus.remaining) { tlEl.className='type-btn-status'; tlEl.textContent='⏱ '+cdStr(lStatus.remaining); }
+  else { tlEl.className='type-btn-status available'; tlEl.textContent='Disponível'; }
+
+  if(cReached) { tcEl.className='type-btn-status warning'; tcEl.textContent='Limite atingido'; }
+  else if(!cStatus.ok && cStatus.remaining) { tcEl.className='type-btn-status'; tcEl.textContent='⏱ '+cdStr(cStatus.remaining); }
+  else { tcEl.className='type-btn-status available'; tcEl.textContent='Disponível'; }
+
+  renderRegisterBtn();
+}
+
+function renderRegisterBtn() {
+  const isLiq = selectedType==='liquid';
+  const status = isLiq ? canDrinkLiquid() : canDrinkConc();
+  const btn = document.getElementById('register-btn');
+  const icon = document.getElementById('register-icon');
+  const lbl = document.getElementById('register-label');
+
+  btn.className = 'register-btn ';
+  if(!status.ok) {
+    btn.className += 'inactive';
+  } else {
+    btn.className += isLiq ? 'liquid-active' : 'conc-active';
+  }
+
+  if(isLiq) {
+    icon.innerHTML = `<path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/>`;
+    icon.setAttribute('fill', status.ok ? 'rgba(120,200,255,0.9)' : 'rgba(120,200,255,0.25)');
+    icon.setAttribute('stroke', 'rgba(120,200,255,0.6)');
+    lbl.textContent = 'REGISTRAR LÍQUIDO';
+  } else {
+    icon.innerHTML = `<path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0C17 7 12 2 12 2z"/>`;
+    icon.setAttribute('fill', status.ok ? 'rgba(255,160,60,0.9)' : 'rgba(255,160,60,0.25)');
+    icon.setAttribute('stroke', 'rgba(255,160,60,0.6)');
+    lbl.textContent = 'REGISTRAR CONCENTRADO';
+  }
+}
+
+function renderHistory() {
+  const ts = todayShots().slice().reverse();
+  const container = document.getElementById('history-list');
+  const ls = liquidShots(), cs = concShots();
+  let lIdx = ls.length, cIdx = cs.length;
+
+  if(ts.length===0) {
+    container.innerHTML = '<div class="history-empty">Nenhum shot registrado hoje</div>';
+    return;
+  }
+
+  container.innerHTML = ts.map(shot => {
+    const isLiq = shot.type==='liquid';
+    const num = isLiq ? lIdx-- : cIdx--;
+    const icon = isLiq
+      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(120,200,255,0.85)" stroke="rgba(120,200,255,0.5)" stroke-width="1.5"><path d="M12 2 C12 2 4 10 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,160,60,0.85)" stroke="rgba(255,160,60,0.5)" stroke-width="1.5"><path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0C17 7 12 2 12 2z"/></svg>`;
+    return `<div class="history-item ${shot.type}">
+      <div class="history-left">
+        <div class="history-dot ${shot.type}">${icon}</div>
+        <div>
+          <div class="history-name">${isLiq?'Líquido':'Concentrado'} #${num}</div>
+          <div class="history-time-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(140,180,255,0.5)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${fmt(shot.time)}
+          </div>
+        </div>
+      </div>
+      <button class="delete-btn" onclick="removeShot(${shot.id})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,120,120,0.55)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function render() { renderCards(); renderHistory(); }
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+function selectType(type) {
+  selectedType = type;
+  document.getElementById('btn-liquid').classList.toggle('selected', type==='liquid');
+  document.getElementById('btn-conc').classList.toggle('selected', type==='concentrated');
+  // Update flame icon fill on conc button
+  renderRegisterBtn();
+}
+
+function registerShot() {
+  const isLiq = selectedType==='liquid';
+  const status = isLiq ? canDrinkLiquid() : canDrinkConc();
+  const lStatus = canDrinkLiquid(), cStatus = canDrinkConc();
+  const cdL = !lStatus.ok && lStatus.remaining ? cdStr(lStatus.remaining) : '';
+  const cdC = !cStatus.ok && cStatus.remaining ? cdStr(cStatus.remaining) : '';
+
+  if(!status.ok) {
+    if(status.reason==='limit') showToast(`⚠️ Limite de shots ${isLiq?'líquidos':'concentrados'} atingido!`);
+    else if(status.reason==='after_liquid') showToast(`⏳ Aguarde ${cdC} após o shot líquido`);
+    else if(status.reason==='after_conc') showToast(`⏳ Aguarde ${cdL} após o shot concentrado`);
+    else showToast(`⏳ Aguarde mais ${isLiq?cdL:cdC}`);
+    return;
+  }
+
+  const btn = document.getElementById('register-btn');
+  btn.style.transform = 'scale(0.88)';
+  setTimeout(()=>btn.style.transform='', 180);
+
+  const shot = { id: Date.now(), date: getTodayKey(), time: new Date().toISOString(), type: selectedType };
+  state.shots.push(shot);
+  save();
+  showToast(isLiq ? '💧 Shot líquido registrado! Saúde!' : '🔥 Shot concentrado registrado! Saúde!');
+  scheduleNotifs(shot);
+  render();
+}
+
+function removeShot(id) {
+  state.shots = state.shots.filter(s=>s.id!==id);
+  save(); render();
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+async function requestNotif() {
+  if(!('Notification' in window)) { showToast('Notificações não suportadas.'); return; }
+  const p = await Notification.requestPermission();
+  if(p==='granted') {
+    state.notifEnabled = true; save();
+    document.getElementById('notif-status-text').textContent = 'Ativadas ✓';
+    document.getElementById('notif-btn').style.display = 'none';
+    showToast('✅ Notificações ativadas!');
+  } else {
+    showToast('❌ Permissão negada.');
+  }
+}
+
+function pushNotif(title, body, delayMs) {
+  if(!state.notifEnabled || Notification.permission!=='granted') return;
+  if(delayMs <= 0) return;
+  setTimeout(()=> new Notification(title, { body, icon:'icons/icon-192.png' }), delayMs);
+}
+
+function scheduleNotifs(shot) {
+  const isLiq = shot.type==='liquid';
+  const label = isLiq ? 'líquido' : 'concentrado';
+  const wait = isLiq ? state.intervalLiquid : state.intervalConcentrated;
+  pushNotif('🍸 MeuGin', `Seu próximo shot ${label} está liberado!`, wait*60000);
+  if(isLiq) pushNotif('🔥 MeuGin', 'Já pode tomar um shot concentrado!', state.intervalCross*60000);
+  else pushNotif('💧 MeuGin', 'Já pode tomar um shot líquido!', state.intervalCross*60000);
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function openSettings() {
+  tempSettings = {
+    sLimitLiq: state.limitLiquid, sLimitConc: state.limitConcentrated,
+    sIntLiq: state.intervalLiquid, sIntConc: state.intervalConcentrated,
+    sIntCross: state.intervalCross,
+  };
+  ['sLimitLiq','sLimitConc','sIntLiq','sIntConc','sIntCross'].forEach(k=>{
+    document.getElementById('val-'+k).textContent = tempSettings[k];
+  });
+  const ne = state.notifEnabled;
+  document.getElementById('notif-status-text').textContent = ne ? 'Ativadas ✓' : 'Desativadas';
+  document.getElementById('notif-btn').style.display = ne ? 'none' : '';
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function closeSettingsIfOutside(e) {
+  if(e.target === document.getElementById('settings-overlay'))
+    document.getElementById('settings-overlay').classList.remove('open');
+}
+
+const LIMITS = { sLimitLiq:[1,20,1], sLimitConc:[1,10,1], sIntLiq:[10,480,10], sIntConc:[10,480,10], sIntCross:[10,240,10] };
+function adj(key, delta) {
+  const [min,max] = LIMITS[key];
+  tempSettings[key] = Math.max(min, Math.min(max, tempSettings[key]+delta));
+  document.getElementById('val-'+key).textContent = tempSettings[key];
+}
+
+function saveSettings() {
+  state.limitLiquid      = tempSettings.sLimitLiq;
+  state.limitConcentrated= tempSettings.sLimitConc;
+  state.intervalLiquid   = tempSettings.sIntLiq;
+  state.intervalConcentrated = tempSettings.sIntConc;
+  state.intervalCross    = tempSettings.sIntCross;
+  save(); render();
+  document.getElementById('settings-overlay').classList.remove('open');
+  showToast('✅ Configurações salvas!');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastId = 0;
+function showToast(msg) {
+  const id = ++toastId;
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg; el.id = 'toast-'+id;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{
+    el.classList.add('out');
+    setTimeout(()=>el.remove(), 350);
+  }, 3000);
+}
+
+// ─── Install PWA ──────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  const banner = document.getElementById('install-banner');
+  banner.classList.remove('hidden');
+  banner.style.display = 'flex';
+});
+document.getElementById('install-btn').onclick = async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  dismissInstall();
+};
+function dismissInstall() {
+  document.getElementById('install-banner').classList.add('hidden');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+load();
+document.getElementById('date-text').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+if(state.notifEnabled && Notification.permission==='granted') {
+  document.getElementById('notif-status-text').textContent = 'Ativadas ✓';
+  document.getElementById('notif-btn').style.display = 'none';
+}
+render();
+tickInterval = setInterval(render, 30000);
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
